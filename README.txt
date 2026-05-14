@@ -1,1 +1,0 @@
-AWC Operations App V2 Prototype - single file app met alle modules in index.html.

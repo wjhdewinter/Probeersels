@@ -1,0 +1,1 @@
+AWC Operations App V2 single-file prototype. Alle modules zitten in index.html.

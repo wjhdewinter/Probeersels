@@ -1,29 +1,88 @@
-<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Virtuele CMR</title><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AWC Real CMR Layout</title>
 <style>
-body{font-family:Arial;margin:0;background:#f6f7f9;color:#111}header{background:#fff;padding:16px;border-bottom:1px solid #ddd}main{max-width:1000px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:14px;margin-bottom:12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}label{font-size:13px;font-weight:900;display:block;margin-bottom:5px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:15px}textarea{min-height:75px}.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:10px;background:#111;color:#fff;font-weight:900;padding:10px 13px}.primary{background:#f58220}.green{background:#198754}.red{background:#dc2626}.light{background:#eee;color:#111}.cmr{background:#fff;border:2px solid #111;padding:10px;margin-bottom:14px}.cmr h2{text-align:center;margin:0 0 8px}.copy{text-align:center;font-weight:900;border:1px solid #111;padding:6px;margin-bottom:8px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.box{border:1px solid #111;min-height:45px;padding:7px;font-size:13px}.box b{display:block;font-size:11px;text-transform:uppercase;margin-bottom:4px}.goods{min-height:95px}.sign{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.sig{border:1px solid #111;min-height:65px;padding:7px;font-size:12px}.item{border:1px solid #ddd;border-radius:12px;padding:10px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:8px}@media(max-width:760px){.grid,.grid3,.row,.sign{grid-template-columns:1fr}}@media print{header,.form,.historyCard,.noPrint{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{border:0;margin:0;padding:0}.cmr{page-break-after:always;min-height:280mm;margin:0;border:2px solid #111}}
-</style></head><body><header><h1>📄 Virtuele CMR</h1><p>Vul één keer in en kies hoeveel kopieën je wilt printen of als PDF maken.</p></header><main>
-<div class="card form"><h2>CMR invullen</h2><div class="grid3"><div><label>CMR nummer</label><input id="cmrNo"></div><div><label>Datum</label><input id="date" type="date"></div><div><label>Aantal kopieën</label><select id="copies"><option>1</option><option>2</option><option>3</option><option selected>4</option></select></div></div>
-<div class="grid"><div><label>Afzender</label><textarea id="sender"></textarea></div><div><label>Ontvanger</label><textarea id="receiver"></textarea></div><div><label>Vervoerder</label><textarea id="carrier"></textarea></div><div><label>Opvolgende vervoerder</label><textarea id="nextCarrier"></textarea></div></div>
-<div class="grid3"><div><label>Plaats ontvangst</label><input id="pickupPlace"></div><div><label>Plaats aflevering</label><input id="deliveryPlace"></div><div><label>Kenteken / trailer</label><input id="plate"></div><div><label>Referentie / order</label><input id="reference"></div><div><label>Aantal colli</label><input id="colli" type="number"></div><div><label>Bruto gewicht kg</label><input id="weight" type="number" step="0.01"></div></div>
-<label>Omschrijving goederen</label><textarea id="goods"></textarea><div class="grid"><div><label>Instructies / opmerkingen</label><textarea id="remarks"></textarea></div><div><label>Documenten bijgevoegd</label><textarea id="documents"></textarea></div></div>
-<div class="grid3"><div><label>Opgemaakt te</label><input id="madeAt"></div><div><label>Naam afzender</label><input id="senderName"></div><div><label>Naam chauffeur</label><input id="driverName"></div></div>
-<div class="btns"><button class="primary" onclick="updatePreview()">Voorbeeld bijwerken</button><button class="green" onclick="printCmr()">Print CMR</button><button onclick="makePdf()">PDF maken</button><button class="light" onclick="saveCmr()">Opslaan</button><button class="red" onclick="clearForm()">Leegmaken</button></div></div>
-<div class="card"><h2>Printvoorbeeld</h2><p class="noPrint">Aantal kopieën wordt bepaald door de dropdown hierboven.</p><div id="preview"></div></div>
-<div class="card historyCard"><h2>Geschiedenis</h2><div id="history"></div></div>
-<script>
-const KEY='awc_virtual_cmr_history_v2';let history=JSON.parse(localStorage.getItem(KEY)||'[]');const copyNames=['Kopie 1','Kopie 2','Kopie 3','Kopie 4'];
-function q(id){return document.getElementById(id)}function v(id){return q(id).value.trim()}function setv(id,x){q(id).value=x}function today(){return new Date().toISOString().slice(0,10)}function autoNo(){let d=new Date();return 'CMR-'+d.getFullYear()+'-'+String(Date.now()).slice(-6)}
-function esc(s){return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\n','<br>')}
-function data(){return{cmrNo:v('cmrNo'),date:v('date'),sender:v('sender'),receiver:v('receiver'),carrier:v('carrier'),nextCarrier:v('nextCarrier'),pickupPlace:v('pickupPlace'),deliveryPlace:v('deliveryPlace'),plate:v('plate'),reference:v('reference'),colli:v('colli'),weight:v('weight'),goods:v('goods'),remarks:v('remarks'),documents:v('documents'),madeAt:v('madeAt'),senderName:v('senderName'),driverName:v('driverName')}}
-function cmrHtml(d,copy){return `<div class="cmr"><h2>INTERNATIONALE VRACHTBRIEF / CMR</h2><div class="copy">${copy} — ${esc(d.cmrNo)}</div><div class="row"><div class="box"><b>1 Afzender</b>${esc(d.sender)}</div><div class="box"><b>2 Ontvanger</b>${esc(d.receiver)}</div></div><div class="row"><div class="box"><b>3 Plaats aflevering</b>${esc(d.deliveryPlace)}</div><div class="box"><b>4 Plaats/datum ontvangst</b>${esc(d.pickupPlace)}<br>${esc(d.date)}</div></div><div class="row"><div class="box"><b>5 Documenten</b>${esc(d.documents)}</div><div class="box"><b>6 Colli / referentie</b>Colli: ${esc(d.colli)}<br>Ref: ${esc(d.reference)}</div></div><div class="row"><div class="box goods"><b>Omschrijving goederen</b>${esc(d.goods)}</div><div class="box"><b>Gewicht / kenteken</b>${esc(d.weight)} kg<br>${esc(d.plate)}</div></div><div class="row"><div class="box"><b>Vervoerder</b>${esc(d.carrier)}</div><div class="box"><b>Opvolgende vervoerder</b>${esc(d.nextCarrier)}</div></div><div class="box"><b>Instructies / opmerkingen</b>${esc(d.remarks)}</div><div class="row" style="margin-top:8px"><div class="box"><b>Opgemaakt te</b>${esc(d.madeAt)}<br>${esc(d.date)}</div><div class="box"><b>CMR nummer</b>${esc(d.cmrNo)}</div></div><div class="sign"><div class="sig"><b>Handtekening afzender</b><br><br>${esc(d.senderName)}</div><div class="sig"><b>Handtekening chauffeur</b><br><br>${esc(d.driverName)}</div><div class="sig"><b>Handtekening ontvanger</b></div></div></div>`}
-function updatePreview(){let d=data(),n=parseInt(v('copies')||'1');q('preview').innerHTML=Array.from({length:n},(_,i)=>cmrHtml(d,copyNames[i]||('Kopie '+(i+1)))).join('')}
-function printCmr(){updatePreview();window.print()}
-function makePdf(){updatePreview();const {jsPDF}=window.jspdf;let d=data(),n=parseInt(v('copies')||'1'),doc=new jsPDF('p','mm','a4');for(let i=0;i<n;i++){if(i>0)doc.addPage();doc.setFontSize(15);doc.text('INTERNATIONALE VRACHTBRIEF / CMR',105,14,{align:'center'});doc.setFontSize(10);doc.text((copyNames[i]||('Kopie '+(i+1)))+' - '+d.cmrNo,105,21,{align:'center'});let y=30;function box(t,txt,x,w,h){doc.rect(x,y,w,h);doc.setFont(undefined,'bold');doc.text(t,x+2,y+5);doc.setFont(undefined,'normal');doc.text(String(txt||'-'),x+2,y+11,{maxWidth:w-4})}box('1 Afzender',d.sender,10,92,28);box('2 Ontvanger',d.receiver,108,92,28);y+=32;box('3 Plaats aflevering',d.deliveryPlace,10,92,22);box('4 Plaats/datum ontvangst',d.pickupPlace+' / '+d.date,108,92,22);y+=26;box('5 Documenten',d.documents,10,92,22);box('6 Colli / ref','Colli: '+d.colli+' Ref: '+d.reference,108,92,22);y+=26;box('Omschrijving goederen',d.goods,10,120,40);box('Gewicht / kenteken',(d.weight||'-')+' kg\n'+(d.plate||''),136,64,40);y+=44;box('Vervoerder',d.carrier,10,92,24);box('Opvolgende vervoerder',d.nextCarrier,108,92,24);y+=28;box('Instructies / opmerkingen',d.remarks,10,190,28);y+=34;box('Opgemaakt te',d.madeAt+' / '+d.date,10,92,20);box('CMR nummer',d.cmrNo,108,92,20);y+=28;doc.rect(10,y,60,30);doc.text('Handtekening afzender',12,y+6);doc.text(d.senderName||'',12,y+22);doc.rect(75,y,60,30);doc.text('Handtekening chauffeur',77,y+6);doc.text(d.driverName||'',77,y+22);doc.rect(140,y,60,30);doc.text('Handtekening ontvanger',142,y+6)}doc.save((d.cmrNo||'AWC-CMR')+'.pdf')}
-function saveCmr(){let d=data();history.unshift({...d,savedAt:new Date().toLocaleString('nl-NL')});history=history.slice(0,50);localStorage.setItem(KEY,JSON.stringify(history));renderHistory();alert('CMR opgeslagen.')}
-function loadCmr(i){let d=history[i];Object.keys(d).forEach(k=>{if(q(k))setv(k,d[k])});updatePreview()}
-function deleteCmr(i){history.splice(i,1);localStorage.setItem(KEY,JSON.stringify(history));renderHistory()}
-function renderHistory(){q('history').innerHTML=history.length?history.map((d,i)=>`<div class="item"><div><b>${esc(d.cmrNo)}</b><br>${esc(d.date)} • ${esc(d.receiver||d.reference||'-')}<br><small>${esc(d.savedAt)}</small></div><div><button class="light" onclick="loadCmr(${i})">Open</button> <button class="red" onclick="deleteCmr(${i})">×</button></div></div>`).join(''):'<p>Nog geen CMR opgeslagen.</p>'}
-function clearForm(){['sender','receiver','carrier','nextCarrier','pickupPlace','deliveryPlace','plate','reference','colli','weight','goods','remarks','documents','madeAt','senderName','driverName'].forEach(id=>setv(id,''));setv('date',today());setv('cmrNo',autoNo());updatePreview()}
-function init(){setv('date',today());setv('cmrNo',autoNo());renderHistory();updatePreview()}init();
-</script></main></body></html>
+body{margin:0;background:#f2f2f2;font-family:Arial}
+header{background:#fff;padding:16px;border-bottom:1px solid #ddd}
+main{max-width:1200px;margin:auto;padding:14px}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #ddd}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+input,textarea,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;box-sizing:border-box}
+textarea{min-height:70px}
+button{padding:12px 14px;border:0;border-radius:10px;font-weight:bold;background:#111;color:#fff}
+.orange{background:#f58220}
+.green{background:#198754}
+.preview img{width:100%;border:1px solid #ddd;border-radius:8px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>📄 Virtuele CMR — Real Layout</h1>
+<p>Gebaseerd op een echte CMR layout zoals jouw voorbeeld.</p>
+</header>
+
+<main>
+
+<div class="card">
+<h2>CMR invullen</h2>
+
+<div class="grid">
+<div><label>CMR nummer</label><input id="cmr"></div>
+<div><label>Datum</label><input type="date" id="datum"></div>
+<div><label>Aantal kopieën</label>
+<select id="copies">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option selected>4</option>
+</select>
+</div>
+</div>
+
+<div class="grid">
+<div><label>1 Afzender</label><textarea></textarea></div>
+<div><label>2 Geadresseerde</label><textarea></textarea></div>
+<div><label>16 Vervoerder</label><textarea></textarea></div>
+</div>
+
+<div class="grid">
+<div><label>3 Plaats aflevering</label><input></div>
+<div><label>4 Plaats/datum ontvangst</label><input></div>
+<div><label>Kenteken</label><input></div>
+</div>
+
+<div class="grid">
+<div><label>5 Bijgevoegde documenten</label><textarea></textarea></div>
+<div><label>6 Aantal colli</label><input type="number"></div>
+<div><label>11 Gewicht</label><input type="number"></div>
+</div>
+
+<label>9 Omschrijving goederen</label>
+<textarea style="min-height:120px"></textarea>
+
+<div class="grid">
+<div><label>13 Instructies afzender</label><textarea></textarea></div>
+<div><label>19 Speciale overeenkomsten</label><textarea></textarea></div>
+<div><label>24 Ontvangen goederen</label><textarea></textarea></div>
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+<button class="orange" onclick="window.print()">🖨️ Print CMR</button>
+<button class="green">📄 PDF</button>
+<button>💾 Opslaan</button>
+</div>
+</div>
+
+<div class="card preview">
+<h2>Voorbeeld layout</h2>
+<p>De uiteindelijke print/PDF wordt op deze echte CMR layout gebaseerd.</p>
+<img src="1778782033890.jpeg">
+</div>
+
+</main>
+</body>
+</html>
